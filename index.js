@@ -22,14 +22,25 @@ app.post("/signup", async(req, res) => {
         name: req.body.name,
         password: req.body.password
     });
-    await newUser
-        .save()
-        .then(() => {
-            res.status(200).send(newUser);
+
+    await User.findOne({ name: newUser.name 
+        .then(async profile => {
+            if (!profile) {
+                await newUser
+                    .save()
+                    .then(() => {
+                        res.status(200).send(newUser);
+                    })
+                    .catch(err => {
+                        console.log("Error is ", err.message);
+                    });
+            } else {
+                res.send("Duplicate User");
+            }
         })
         .catch(err => {
             console.log("Error is ", err.message);
-    });
+    })
 });
 
 app.post('/login', async (req,res) => {
