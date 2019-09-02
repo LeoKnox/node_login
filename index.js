@@ -1,7 +1,10 @@
 const express = require('express');
 const app = express();
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
 const port = process.env.PORT || 1337;
-const User = require('/models/User');
+const User = require('./models/User');
 const db = require('./mysetup/myurl').myurl;
 
 mongoose
@@ -22,25 +25,31 @@ app.post("/signup", async(req, res) => {
         name: req.body.name,
         password: req.body.password
     });
-
-    await User.findOne({ name: newUser.name 
-        .then(async profile => {
+    await User.findOne({ name: newUser.name })
+        .then (async profile => {
             if (!profile) {
-                await newUser
-                    .save()
-                    .then(() => {
-                        res.status(200).send(newUser);
-                    })
-                    .catch(err => {
-                        console.log("Error is ", err.message);
-                    });
-            } else {
-                res.send("Duplicate User");
-            }
-        })
-        .catch(err => {
-            console.log("Error is ", err.message);
+            bcrypt.hash(newUser.password, saltRounds, async(err, hash) => {
+                if (err) {
+                    console.log("Error is ", err.message);
+                } else {
+                    newUser.password = hash;
+                    await newUser
+                        .save()
+                        .then(() => {
+                            res.status(200).send(newUser);
+                        })
+                        .catch(err => {
+                            console.log("Error is ", err.message);
+                        });
+                }
+            })
+        } else {
+            res.send("User already exists...");
+        }
     })
+    .catch(err => {
+        console.log("Error is ", err.message);
+    });
 });
 
 app.post('/login', async (req,res) => {
